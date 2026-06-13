@@ -96,7 +96,7 @@ export default function DashboardPage({ session, setPage, showToast }) {
           <div style={{ color: text, fontWeight: 700, fontSize: 13 }}>Admin Panel</div>
         </div>
         <button onClick={() => setSideOpen(false)} className="sidebar-close-btn" style={{
-          background: "none", border: "none", color: sub, fontSize: 20, cursor: "pointer", display: "none"
+          background: "none", border: "none", color: sub, fontSize: 20, cursor: "pointer"
         }}>✕</button>
       </div>
 
@@ -164,7 +164,7 @@ export default function DashboardPage({ session, setPage, showToast }) {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button className="admin-ham" onClick={() => setSideOpen(true)} style={{
-              display: "none", background: "none", border: "none",
+              background: "none", border: "none",
               color: text, fontSize: 22, cursor: "pointer", padding: 0,
             }}>☰</button>
             <div style={{ color: text, fontWeight: 700, fontSize: 16 }}>
@@ -179,26 +179,26 @@ export default function DashboardPage({ session, setPage, showToast }) {
           {/* OVERVIEW */}
           {tab === "overview" && (
             <>
-              <h2 style={styles.dashTitle}>Dashboard Overview</h2>
-              <div style={styles.statsGrid}>
+              <h2 style={{ ...styles.dashTitle, fontSize: "clamp(16px, 4vw, 24px)", marginBottom: 16 }}>Dashboard Overview</h2>
+              <div className="overview-stats-grid">
                 {[
                   { label: "Total Drivers", value: data.drivers.length, icon: "👤", color: "#6366f1" },
                   { label: "Total Cars", value: data.cars.length, icon: "🚗", color: "#f59e0b" },
                   { label: "Total Trips", value: data.trips.length, icon: "🛣️", color: "#22c55e" },
                   { label: "Total Revenue", value: `₹${totalFare.toFixed(0)}`, icon: "💰", color: "#ef4444" },
                 ].map((s) => (
-                  <div key={s.label} style={{ ...styles.statCard, borderLeft: `4px solid ${s.color}` }}>
-                    <div style={{ fontSize: 36 }}>{s.icon}</div>
-                    <div>
-                      <div style={styles.statCardNum}>{s.value}</div>
-                      <div style={styles.statCardLabel}>{s.label}</div>
+                  <div key={s.label} style={{ ...styles.statCard, borderLeft: `4px solid ${s.color}`, padding: "14px 16px", gap: 12, minWidth: 0, overflow: "hidden" }}>
+                    <div style={{ fontSize: 26, flexShrink: 0 }}>{s.icon}</div>
+                    <div style={{ minWidth: 0, overflow: "hidden" }}>
+                      <div style={{ ...styles.statCardNum, fontSize: "clamp(15px, 3.5vw, 26px)", overflowWrap: "break-word", wordBreak: "break-all" }}>{s.value}</div>
+                      <div style={{ ...styles.statCardLabel, fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: 28 }}>
-                <h3 style={styles.dashSubtitle}>Recent Trips</h3>
-                <div style={{ overflowX: "auto" }}>
+              <div style={{ marginTop: 24 }}>
+                <h3 style={{ ...styles.dashSubtitle, fontSize: "clamp(14px, 3.5vw, 18px)", marginBottom: 12 }}>Recent Trips</h3>
+                <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                   <AdminTable
                     cols={["Customer", "Driver", "Car", "Date", "Fare"]}
                     rows={data.trips.slice(-5).reverse().map((t) => [
@@ -215,16 +215,35 @@ export default function DashboardPage({ session, setPage, showToast }) {
           {/* DRIVERS */}
           {tab === "drivers" && (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+              <div className="dash-tab-header">
                 <h2 style={styles.dashTitle}>Drivers</h2>
-                <button style={styles.heroCta} onClick={() => setDriverForm({
+                <button style={styles.heroCta} className="dash-add-btn" onClick={() => setDriverForm({
                   name: "", age: "", phone: "", email: "", license: "", expiry: "", address: "", notes: ""
                 })}>+ Add Driver</button>
               </div>
               {driverForm && (
                 <DriverForm form={driverForm} setForm={setDriverForm} onSave={saveDriver} onCancel={() => setDriverForm(null)} />
               )}
-              <div style={{ overflowX: "auto" }}>
+              <div className="dash-mobile-cards">
+                {data.drivers.map((d) => (
+                  <div key={d.id} style={{ background: styles.darkCard, border: `1px solid ${border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div style={{ color: text, fontWeight: 700, fontSize: 15 }}>{d.name}</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button style={styles.editBtn} onClick={() => setDriverForm({ ...d })}>Edit</button>
+                        <button style={styles.delBtn} onClick={() => deleteDriver(d.id)}>Delete</button>
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 13, color: sub }}>
+                      <span>📞 {d.phone}</span>
+                      <span>🎂 Age: {d.age}</span>
+                      <span style={{ gridColumn: "1/-1" }}>✉️ {d.email}</span>
+                      <span style={{ gridColumn: "1/-1" }}>🪪 {d.license}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="dash-desktop-table" style={{ overflowX: "auto" }}>
                 <AdminTable
                   cols={["Name", "Age", "Phone", "Email", "License", "Actions"]}
                   rows={data.drivers.map((d) => [
@@ -242,9 +261,9 @@ export default function DashboardPage({ session, setPage, showToast }) {
           {/* CARS */}
           {tab === "cars" && (
             <>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+              <div className="dash-tab-header">
                 <h2 style={styles.dashTitle}>Cars</h2>
-                <button style={styles.heroCta} onClick={() => setCarForm({
+                <button style={styles.heroCta} className="dash-add-btn" onClick={() => setCarForm({
                   make: "", model: "", year: "", license_plate: "", insurance_no: "",
                   color: "", seating_capacity: "", notes: "", status: "available",
                   emi_date: "", service_date: ""
@@ -253,7 +272,31 @@ export default function DashboardPage({ session, setPage, showToast }) {
               {carForm && (
                 <CarForm form={carForm} setForm={setCarForm} onSave={saveCar} onCancel={() => setCarForm(null)} />
               )}
-              <div style={{ overflowX: "auto" }}>
+              <div className="dash-mobile-cards">
+                {data.cars.map((c) => (
+                  <div key={c.id} style={{ background: styles.darkCard, border: `1px solid ${border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                      <div style={{ color: text, fontWeight: 700, fontSize: 15 }}>{c.make} {c.model}</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button style={styles.editBtn} onClick={() => setCarForm({ ...c })}>Edit</button>
+                        <button style={styles.delBtn} onClick={() => deleteCar(c.id)}>Delete</button>
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 13, color: sub }}>
+                      <span>📅 {c.year}</span>
+                      <span>🔖 {c.license_plate}</span>
+                      <span style={{ gridColumn: "1/-1" }}>
+                        <span style={{
+                          background: c.status === "available" ? "#22c55e20" : "#ef444420",
+                          color: c.status === "available" ? "#22c55e" : "#ef4444",
+                          padding: "2px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600
+                        }}>{c.status}</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="dash-desktop-table" style={{ overflowX: "auto" }}>
                 <AdminTable
                   cols={["Make", "Model", "Year", "Plate", "Status", "Actions"]}
                   rows={data.cars.map((c) => [
@@ -277,7 +320,25 @@ export default function DashboardPage({ session, setPage, showToast }) {
           {tab === "trips" && (
             <>
               <h2 style={styles.dashTitle}>All Trips</h2>
-              <div style={{ overflowX: "auto" }}>
+              <div className="dash-mobile-cards">
+                {data.trips.map((t) => (
+                  <div key={t.id} style={{ background: styles.darkCard, border: `1px solid ${border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                      <span style={{ color: gold, fontWeight: 700, fontSize: 13 }}>#{t.id}</span>
+                      <span style={{ color: sub, fontSize: 12 }}>{t.trip_date}</span>
+                    </div>
+                    <div style={{ color: text, fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{t.customer_name}</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 12px", fontSize: 13, color: sub }}>
+                      <span>👤 {t.driver_name || "—"}</span>
+                      <span>🚗 {t.car_make} {t.car_model}</span>
+                      <span style={{ gridColumn: "1/-1" }}>📍 {t.pickup_location} → {t.drop_location}</span>
+                      <span style={{ color: gold, fontWeight: 700 }}>₹{t.total_fare?.toFixed(0)}</span>
+                      <span>{t.status || "Pending"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="dash-desktop-table" style={{ overflowX: "auto" }}>
                 <AdminTable
                   cols={["#", "Customer", "Driver", "Car", "Pickup", "Drop", "Date", "Fare", "Status", "OTP"]}
                   rows={data.trips.map((t) => [
@@ -296,12 +357,38 @@ export default function DashboardPage({ session, setPage, showToast }) {
       </div>
 
       <style>{`
+        .sidebar-close-btn { display: none; }
+        .admin-ham { display: none; }
+        .overview-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 16px;
+        }
+        .dash-tab-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .dash-mobile-cards { display: none; }
+        .dash-desktop-table { display: block; }
         @media (max-width: 768px) {
           .admin-sidebar { transform: translateX(-100%); }
           .admin-sidebar.open { transform: translateX(0) !important; }
           .dash-content { margin-left: 0 !important; }
           .admin-ham { display: flex !important; }
           .sidebar-close-btn { display: flex !important; }
+          .overview-stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+          }
+          .dash-content > div { padding: 14px 12px !important; }
+          .dash-mobile-cards { display: block !important; }
+          .dash-desktop-table { display: none !important; }
+          .dash-add-btn { width: 100%; }
+          .dash-tab-header { flex-direction: column; align-items: flex-start; }
         }
       `}</style>
     </div>
