@@ -1,0 +1,254 @@
+import { useState, useEffect, useCallback } from "react";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { api } from "./utils/api";
+
+import Toast from "./components/Toast";
+import Navbar from "./components/Navbar";
+import HomePage from "./components/HomePage";
+import LoginPage from "./components/LoginPage";
+import RegisterPage from "./components/RegisterPage";
+import BookNowPage from "./components/BookNowPage";
+import MyCartPage from "./components/MyCartPage";
+import DashboardPage from "./components/DashboardPage";
+import DriverLoginPage from "./components/DriverLoginPage";
+import DriverPanelPage from "./components/DriverPanelPage";
+import AdminLoginPage from "./components/AdminLoginPage";
+import ContactPage from "./components/ContactPage";
+import UserProfilePage from "./components/UserProfilePage";
+
+const PAGE_PATHS = {
+  home: "/",
+  login: "/login",
+  register: "/signup",
+  booknow: "/book-trip",
+  mycart: "/my-trips",
+  profile: "/profile",
+  dashboard: "/admin/dashboard",
+  "admin-login": "/admin/login",
+  "driver-login": "/driver/login",
+  "driver-panel": "/driver/dashboard",
+  contact: "/contact",
+};
+
+const PATH_PAGES = {
+  "/": "home",
+  "/login": "login",
+  "/signup": "register",
+  "/book-trip": "booknow",
+  "/taxi-packages": "home",
+  "/tour-packages": "home",
+  "/my-trips": "mycart",
+  "/profile": "profile",
+  "/admin/login": "admin-login",
+  "/admin/dashboard": "dashboard",
+  "/driver/login": "driver-login",
+  "/driver/panel": "driver-panel",
+  "/driver/dashboard": "driver-panel",
+  "/contact": "contact",
+};
+
+function getPageFromPath() {
+  return PATH_PAGES[window.location.pathname] || "home";
+}
+
+function AppInner() {
+  const [page, setPageState] = useState(getPageFromPath);
+  const [session, setSession] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [selectedTrip, setSelectedTrip] = useState(null);
+  const { isDark } = useTheme();
+
+  const setPage = useCallback((nextPage) => {
+    setPageState(nextPage);
+    const path = PAGE_PATHS[nextPage] || "/";
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, "", path);
+    }
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => setPageState(getPageFromPath());
+    window.addEventListener("popstate", onPop);
+    api.get("/api/session").then((sess) => {
+      setSession(sess);
+      const currentPage = getPageFromPath();
+      if (currentPage === "dashboard" && !sess?.admin_logged_in) setPageState("admin-login");
+      if (currentPage === "driver-panel" && !sess?.driver_logged_in) setPageState("driver-login");
+    }).catch(() => {});
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    if (session?.admin_logged_in && page !== "dashboard") {
+      setPage("dashboard");
+      return;
+    }
+    if (session?.driver_logged_in && page !== "driver-panel") {
+      setPage("driver-panel");
+    }
+  }, [session, page, setPage]);
+
+  const showToast = useCallback((msg, type = "info") => {
+    setToast({ msg, type, id: Date.now() });
+  }, []);
+
+  const handleLogin = (sess) => {
+    setSession(sess);
+    setPage(sess?.admin_logged_in ? "dashboard" : "home");
+  };
+
+  const handleDriverLogin = (sess) => {
+    setSession(prev => ({ ...prev, ...sess }));
+    setPage("driver-panel");
+  };
+
+  const handleFixedTripSelect = (trip) => {
+    setSelectedTrip(trip);
+    setPage("booknow");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLogout = async () => {
+    await api.post("/api/logout", {});
+    setSession(null);
+    setPage("home");
+    showToast("Logged out successfully", "info");
+  };
+
+  const bg = isDark ? "#0d0d0d" : "#f5f5f0";
+  const selectOptionBg = isDark ? "#1a1a1a" : "#ffffff";
+
+  const isFullPage = page === "dashboard" || page === "driver-panel";
+
+  return (
+    <div style={{ minHeight: "100vh", background: bg, fontFamily: "'Sora', sans-serif" }}>
+      <style>{`
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: ${bg}; transition: background 0.3s ease; overflow-x: hidden; }
+  img { max-width: 100%; }
+  button { transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+  button:hover { transform: translateY(-1px); }
+  table { min-width: 720px; }
+  .table-wrap, [style*="overflow"] { max-width: 100%; }
+  .hover-card { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+  .hover-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important; }
+
+  @keyframes slideIn {
+    from { transform: translateX(40px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes fadeUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  * { scroll-behavior: smooth; }
+  a { text-decoration: none; }
+  button { font-family: 'Sora', sans-serif; }
+  button:active { transform: scale(0.97) !important; }
+
+  select option { background: ${selectOptionBg}; color: ${isDark ? "#fff" : "#111"}; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: ${isDark ? "#111" : "#eee"}; }
+  ::-webkit-scrollbar-thumb { background: #d4a017; border-radius: 3px; }
+
+  .nav-links { display: flex; gap: 4px; align-items: center; }
+  .hamburger-btn { display: none !important; }
+
+  @media (max-width: 980px) {
+    table { min-width: 760px; }
+  }
+
+  @media (max-width: 768px) {
+    .nav-links { display: none !important; }
+
+    .nav-links.open {
+      display: flex !important;
+      flex-direction: column;
+      position: absolute;
+      top: 76px;
+      left: 0;
+      right: 0;
+      background: ${isDark ? "#0d0d0d" : "#ffffff"};
+      padding: 16px;
+      border-top: 1px solid ${isDark ? "#222" : "#ddd"};
+      z-index: 100;
+    }
+
+    .hamburger-btn { display: flex !important; }
+
+    section[style*="78vh"] { padding: 80px 20px 60px !important; min-height: 60vh !important; }
+
+    .auth-card { padding: 24px 16px !important; max-width: calc(100% - 32px) !important; }
+
+    .book-bg { padding: 20px 12px !important; }
+    .book-container { padding: 20px 14px !important; }
+
+    div[style*="repeat(auto-fit, minmax(200px"] { grid-template-columns: 1fr !important; }
+
+    .admin-sidebar { transform: translateX(-100%); position: fixed; }
+    .dash-content { margin-left: 0 !important; }
+    .driver-main { margin-left: 0 !important; }
+
+    div[style*="repeat(auto-fill, minmax(200px"] { grid-template-columns: 1fr 1fr !important; }
+
+    table { min-width: 560px !important; }
+
+    div[style*="fareCard"] { flex-direction: column !important; align-items: flex-start !important; }
+
+    .fixed-trips-head { display: none !important; }
+    .fixed-trip-row { grid-template-columns: 1fr !important; gap: 10px !important; padding: 16px !important; }
+    .fixed-trip-row button { width: 100% !important; text-align: center !important; }
+
+    .page-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+    .contact-grid { grid-template-columns: 1fr !important; }
+    .nav-desktop { display: none !important; }
+    .nav-mobile { display: flex !important; }
+    .dash-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+  }
+
+  input, select, textarea { color-scheme: ${isDark ? "dark" : "light"}; }
+`}</style>
+
+      {!isFullPage && (
+        <Navbar page={page} setPage={setPage} session={session} onLogout={handleLogout} />
+      )}
+
+      {toast && (
+        <Toast key={toast.id} msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />
+      )}
+
+      <div style={!isFullPage ? { paddingTop: 76 } : {}}>
+        {page === "home" && <HomePage setPage={setPage} onSelectTrip={handleFixedTripSelect} session={session} />}
+        {page === "login" && <LoginPage setPage={setPage} onLogin={handleLogin} showToast={showToast} />}
+        {page === "admin-login" && <AdminLoginPage setPage={setPage} onLogin={handleLogin} showToast={showToast} />}
+        {page === "register" && <RegisterPage setPage={setPage} onLogin={handleLogin} showToast={showToast} />}
+        {page === "booknow" && <BookNowPage session={session} setPage={setPage} showToast={showToast} selectedTrip={selectedTrip} clearSelectedTrip={() => setSelectedTrip(null)} />}
+        {page === "contact" && <ContactPage setPage={setPage} />}
+        {page === "mycart" && <MyCartPage session={session} setPage={setPage} showToast={showToast} />}
+        {page === "profile" && <UserProfilePage session={session} setPage={setPage} showToast={showToast} onLogout={handleLogout} />}
+        {page === "dashboard" && <DashboardPage session={session} setPage={setPage} showToast={showToast} />}
+        {page === "driver-login" && <DriverLoginPage setPage={setPage} onDriverLogin={handleDriverLogin} showToast={showToast} />}
+        {page === "driver-panel" && <DriverPanelPage session={session} setPage={setPage} showToast={showToast} onLogout={handleLogout} />}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
+  );
+}
